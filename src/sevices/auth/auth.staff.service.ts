@@ -1,19 +1,19 @@
-import {prisma} from "../utils/prisma";
-import {sendResponse} from "../utils/sendResponse";
+import {prisma} from "../../utils/prisma";
+import {sendResponse} from "../../utils/sendResponse";
 import jwt from 'jsonwebtoken'
 import dotenv from "dotenv";
 import bcrypt from 'bcrypt'
-import {Register} from "../types/register";
+import {Register} from "../../types/register";
 dotenv.config()
-const findUserCredentials = async (email: string) => {
-    const findUser = await prisma.users.findUnique({where: {email}});
+const findStaffCredentials = async (email: string) => {
+    const findUser = await prisma.staff.findUnique({where: {email}});
     if (!findUser) {
         return {success: false, message: 'user not found'}
     }
     return {success: true, user: findUser};
 }
-export const loginService = async (res:any, email: string, password: string) => {
-    const loginData = await findUserCredentials(email)
+export const loginStaffService = async (res:any, email: string, password: string) => {
+    const loginData = await findStaffCredentials(email)
     if (!loginData.success || !loginData.user) {
         return sendResponse(res, false, null, loginData.message || 'user not found', 403)
     }
@@ -24,7 +24,7 @@ export const loginService = async (res:any, email: string, password: string) => 
             data: {
                 id: loginData.user.id,
                 username: loginData.user.username,
-                role: loginData.user.role,
+                role: 'staff',
                 email: loginData.user.email
             }
         }, process.env.JWT_SECRET!, {expiresIn: expiredToken})
@@ -32,7 +32,7 @@ export const loginService = async (res:any, email: string, password: string) => 
             data: {
                 id: loginData.user.id,
                 username: loginData.user.username,
-                role: loginData.user.role,
+                role: 'taff',
                 email: loginData.user.email
             },
             token: token
@@ -43,9 +43,9 @@ export const loginService = async (res:any, email: string, password: string) => 
     }
 }
 
-export const registerService = async (res:any, request:Register) => {
+export const registerStaffService = async (res:any, request:Register) => {
     const hashedPassword = await bcrypt.hash(request.password, 255)
-    const findUser = await prisma.users.findUnique({
+    const findUser = await prisma.staff.findUnique({
         where: {
             email: request.email,
             username: request.username
@@ -55,24 +55,17 @@ export const registerService = async (res:any, request:Register) => {
         return sendResponse(res, false, null, 'User does exist, change your email and username', 403)
     }
     try {
-        const resUser = await prisma.users.create({
+        const resUser = await prisma.staff.create({
             data: {
                 username: request.username,
                 email: request.email,
                 password: hashedPassword,
-                role: 'customer'
-            }
-        })
-        const resCustomer = await prisma.customers.create({
-            data: {
-                name: request.name,
-                phone_number: request.phone_number,
                 address: request.address,
-                user_id: resUser.id
+                phone: request.phone,
+                name: request.name
             }
         })
         const returnValue = {
-            resCustomer,
             resUser
         }
         return sendResponse(res, true, returnValue, 'Register success', 201)
