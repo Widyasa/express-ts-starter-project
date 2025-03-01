@@ -17,7 +17,7 @@ export const loginStaffService = async (res:any, email: string, password: string
     if (!loginData.success || !loginData.user) {
         return sendResponse(res, false, null, loginData.message || 'user not found', 403)
     }
-    const passwordValidation = await bcrypt.compare(loginData.user.password,password )
+    const passwordValidation = await bcrypt.compare( password,loginData.user.password )
     const expiredToken:number = 60 * 60 * 72
     if (passwordValidation) {
         const token = jwt.sign({
@@ -44,7 +44,7 @@ export const loginStaffService = async (res:any, email: string, password: string
 }
 
 export const registerStaffService = async (res:any, request:Register) => {
-    const hashedPassword = await bcrypt.hash(request.password, 255)
+    const hashedPassword = await bcrypt.hash(request.password, 5)
     const findUser = await prisma.staff.findUnique({
         where: {
             email: request.email,
